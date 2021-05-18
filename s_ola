@@ -1,0 +1,132 @@
+
+--Atinuke Bade-Ajidahun--
+-- Take care of cleanup jobs first  *********
+
+-- Add schedule for CommandLog Cleanup job
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'CommandLog Cleanup',      -- Job name
+		@name = N'CommandLog Cleanup',          -- Schedule name
+		@freq_type = 8,							-- Weekly
+		@freq_interval = 1,						-- Sunday
+		@freq_recurrence_factor = 1,			-- every week
+		@active_start_time = 100;				-- 12:01 AM
+
+-- Add schedule for Output File Cleanup job  (DONEEEEEEEE)
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'Output File Cleanup',     -- Job name
+		@name = N'Output File Cleanup',         -- Schedule name
+		@freq_type = 4,			        --Daily
+		@freq_interval = 1,		        --Daily
+		@active_start_time = 10000;		--1:00AM
+
+-- Add schedule for sp_delete_backuphistory job
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'sp_delete_backuphistory', -- Job name
+		@name = N'sp_delete_backuphistory',     -- Schedule name
+		@freq_type = 8,							-- Weekly
+		@freq_interval = 1,						-- Sunday
+		@freq_recurrence_factor = 1,			-- every week
+		@active_start_time = 300;				-- 12:03 AM
+
+-- Add schedule for sp_purge_jobhistory job
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'sp_purge_jobhistory',     -- Job name
+		@name = N'sp_purge_jobhistory',         -- Schedule name
+		@freq_type = 8,							-- Weekly
+		@freq_interval = 1,						-- Sunday
+		@freq_recurrence_factor = 1,			-- every week
+		@active_start_time = 400;				-- 12:04 AM
+
+
+-- System Database jobs *******************************
+
+-- Add schedule for DatabaseBackup - SYSTEM_DATABASES - FULL job  (DONEEEEEEEE)
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'DatabaseBackup - SYSTEM_DATABASES - FULL',		-- Job name
+		@name = N'DatabaseBackup - SYSTEM_DATABASES - FULL',			-- Schedule name
+		@freq_type = 4,								-- Daily
+		@freq_interval = 1,							-- Daily
+		@active_start_time = 10000;						--1:00am
+
+
+-- Add schedule for DatabaseIntegrityCheck - SYSTEM_DATABASES job   (DONEEEEEEEE)
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'DatabaseIntegrityCheck - SYSTEM_DATABASES',		-- Job name
+		@name = N'DatabaseIntegrityCheck - SYSTEM_DATABASES',			-- Schedule name
+		@freq_type = 8,								--Weekly
+		@freq_interval = 64,							--Saturday
+		@freq_recurrence_factor = 1,			                        -- Every week
+		@active_start_time = 220000;						--10:00PM
+
+
+-- User Database jobs *******************************
+-- Adjust the schedules and frequency to meet your business and infrastructure requirements
+
+-- Add schedule for IndexOptimize - USER_DATABASES job    (DONEEEEEEE)
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'IndexOptimize - USER_DATABASES',					-- Job name
+		@name = N'IndexOptimize - USER_DATABASES',					-- Schedule name
+		@freq_type = 4,									-- Daily
+		@freq_interval = 1,								-- Daily
+		@active_start_time = 0;								--12:00AM
+
+
+-- Add schedule for DatabaseIntegrityCheck - USER_DATABASES job   (DONEEEEE)
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'DatabaseIntegrityCheck - USER_DATABASES',			-- Job name
+		@name = N'DatabaseIntegrityCheck - USER_DATABASES',			-- Schedule name
+		@freq_type = 8,								--Weekly
+		@freq_interval = 64,						        --Saturday
+		@freq_recurrence_factor = 1,			                        -- every week
+		@active_start_time = 220000;					        --10:00PM	
+
+
+-- Add schedule for DatabaseBackup - USER_DATABASES - FULL job   (DONEEEEEE)
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'DatabaseBackup - USER_DATABASES - FULL',			-- Job name
+		@name = N'DatabaseBackup - USER_DATABASES - FULL',			-- Schedule name
+		@freq_type = 8,				                                --Weekly
+		@freq_interval = 1,							--Sunday
+		@freq_recurrence_factor = 1,			                        -- every week          
+		@active_start_time = 20000;					        --2:00AM
+
+
+-- Add schedule for DatabaseBackup - USER_DATABASES - DIFF job   (DONEEEEEEE)
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'DatabaseBackup - USER_DATABASES - DIFF',			-- Job name
+		@name = N'DatabaseBackup - USER_DATABASES - DIFF',			-- Schedule name
+		@freq_type = 8,								-- Weekly
+		@freq_interval = 126,	                                                --Daily except sunday
+		@freq_recurrence_factor = 1,						-- Weekly   
+		@active_start_time = 20000;						--2:00 AM
+
+
+-- Add schedule for DatabaseBackup - USER_DATABASES - LOG job   (DONEEEEEE)
+EXEC msdb.dbo.sp_add_jobschedule 
+		@job_name = N'DatabaseBackup - USER_DATABASES - LOG',			-- Job name
+		@name = N'DatabaseBackup - USER_DATABASES - LOG',			-- Schedule name
+		@freq_type = 4,								-- Daily
+		@freq_interval = 1,							-- Daily
+		@freq_subday_type = 8,					                --Hours
+		@freq_subday_interval = 1,						--Every 1 Hour
+		@active_start_time = 3000;						--12:30am
+		
+-- Get SQL Server Agent jobs and Category information 
+SELECT sj.name AS [Job Name], sj.[description] AS [Job Description], 
+SUSER_SNAME(sj.owner_sid) AS [Job Owner],
+sj.date_created AS [Date Created], sj.[enabled] AS [Job Enabled], 
+sj.notify_email_operator_id, sj.notify_level_email, sc.name AS [CategoryName],
+s.[enabled] AS [Sched Enabled], js.next_run_date, js.next_run_time
+FROM msdb.dbo.sysjobs AS sj WITH (NOLOCK)
+INNER JOIN msdb.dbo.syscategories AS sc WITH (NOLOCK)
+ON sj.category_id = sc.category_id
+LEFT OUTER JOIN msdb.dbo.sysjobschedules AS js WITH (NOLOCK)
+ON sj.job_id = js.job_id
+LEFT OUTER JOIN msdb.dbo.sysschedules AS s WITH (NOLOCK)
+ON js.schedule_id = s.schedule_id
+ORDER BY sj.name OPTION (RECOMPILE);		
+
+
+-- sp_add_jobschedule (Transact-SQL)
+-- https://bit.ly/2Vzll5n
+
